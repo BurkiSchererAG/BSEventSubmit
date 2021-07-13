@@ -11,9 +11,9 @@ $GLOBALS['FE_MOD']['bs']['bs_EventSubmit'] = 'BurkiSchererAG\ModuleEventSubmit';
  */
 $GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE'] = array_merge_recursive(
     (array) $GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE'],
-    array(
-        'bs' => array(
-            'bs_eventsubmit' => array(
+    [
+        'bs' => [
+            'bs_eventsubmit' => [
                 'email_text' => [
                     'eventsubmit_mod_*', 'event_*', 'member_*',
                     'GuestCompany', 'GuestTitle', 'GuestFirstname', 'GuestLastname', 'GuestEmail',
@@ -22,9 +22,9 @@ $GLOBALS['NOTIFICATION_CENTER']['NOTIFICATION_TYPE'] = array_merge_recursive(
                 'file_name' => [
                     'eventsubmit_mod_*', 'event_*', 'member_*'
                 ]
-            )
-        )
-    )
+            ]
+        ]
+    ]
 );
 
 /* make same variables from email_text above, avialable to email_subject, email_html and file_content */

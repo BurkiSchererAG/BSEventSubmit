@@ -13,7 +13,7 @@ System::loadLanguageFile('tl_member');
 Controller::loadDataContainer('tl_calendar_events');
 
 /* mark these standard fields as editable */
-foreach (array('title', 'teaser', 'startDate', 'endDate', 'startTime', 'endTime', 'location', 'url', 'singleSRC', 'enclosure') as $key) {
+foreach (['title', 'teaser', 'startDate', 'endDate', 'startTime', 'endTime', 'location', 'url', 'singleSRC', 'enclosure'] as $key) {
     $GLOBALS['TL_DCA']['tl_calendar_events']['fields'][$key]['eval']['feEditable'] = true;
 }
 
@@ -47,63 +47,63 @@ if (TL_MODE == 'FE') {
 /**
  * Custom Fields
  */
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['email'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['email'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['email'],
     'exclude'                 => true,
     'search'                  => true,
     'filter'                  => true,
     'sorting'                 => true,
     'inputType'               => 'text',
-    'eval'                    => array('maxlength' => 255, 'rgxp' => 'email', 'decodeEntities' => true, 'feEditable' => true, 'feViewable' => true, 'tl_class' => 'w50'),
+    'eval'                    => ['maxlength' => 255, 'rgxp' => 'email', 'decodeEntities' => true, 'feEditable' => true, 'feViewable' => true, 'tl_class' => 'w50'],
     'sql'                     => "varchar(255) NOT NULL default ''"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['company'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['company'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['company'],
     'exclude'                 => true,
     'search'                  => true,
     'filter'                  => true,
     'sorting'                 => true,
     'inputType'               => 'text',
-    'eval'                    => array('maxlength' => 255, 'decodeEntities' => true, 'feEditable' => true, 'feViewable' => true, 'tl_class' => 'w50'),
+    'eval'                    => ['maxlength' => 255, 'decodeEntities' => true, 'feEditable' => true, 'feViewable' => true, 'tl_class' => 'w50'],
     'sql'                     => "varchar(255) NOT NULL default ''"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['designation'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['designation'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['designation'],
     'exclude'                 => true,
     'search'                  => true,
     'sorting'                 => true,
     'flag'                    => 1,
     'inputType'               => 'text',
-    'eval'                    => array('maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'career', 'tl_class' => 'w50'),
+    'eval'                    => ['maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'career', 'tl_class' => 'w50'],
     'sql'                     => "varchar(255) NOT NULL default ''"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['firstname'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['firstname'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['firstname'],
     'exclude'                 => true,
     'search'                  => true,
     'sorting'                 => true,
     'flag'                    => 1,
     'inputType'               => 'text',
-    'eval'                    => array('maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'personal', 'tl_class' => 'w50'),
+    'eval'                    => ['maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'personal', 'tl_class' => 'w50'],
     'sql'                     => "varchar(255) NOT NULL default ''"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['lastname'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['lastname'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['lastname'],
     'exclude'                 => true,
     'search'                  => true,
     'sorting'                 => true,
     'flag'                    => 1,
     'inputType'               => 'text',
-    'eval'                    => array('maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'personal', 'tl_class' => 'w50'),
+    'eval'                    => ['maxlength' => 255, 'feEditable' => true, 'feViewable' => true, 'feGroup' => 'personal', 'tl_class' => 'w50'],
     'sql'                     => "varchar(255) NOT NULL default ''"
-);
+];
 
 
-$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['member'] = array(
+$GLOBALS['TL_DCA']['tl_calendar_events']['fields']['member'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['member'],
     'exclude'                 => true,
     'search'                  => true,
@@ -112,7 +112,7 @@ $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['member'] = array(
     'flag'                    => 11,
     'inputType'               => 'select',
     'foreignKey'              => 'tl_member.lastname',
-    'eval'                    => array('doNotCopy' => true, 'chosen' => true, 'includeBlankOption' => true, 'tl_class' => 'clr w50 wizard'),
+    'eval'                    => ['doNotCopy' => true, 'chosen' => true, 'includeBlankOption' => true, 'tl_class' => 'clr w50 wizard'],
     'wizard' => [
         static function (\Contao\DataContainer $dc) {
             return ($dc->value < 1) ? '' :
@@ -127,19 +127,19 @@ $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['member'] = array(
         }
     ],
     'sql'                     => "int(10) unsigned NOT NULL default '0'",
-    'relation'                => array('type' => 'hasOne', 'load' => 'eager')
-);
+    'relation'                => ['type' => 'hasOne', 'load' => 'eager']
+];
 
 
 //This doesn't have real DB field. Its used add details input textarea
 
 foreach (range(1, $GLOBALS['BS_EventSubmit']['DETAIL_CE_TEXT_FIELD']) as $key) {
-    $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['detailCE_' . $key] = array(
+    $GLOBALS['TL_DCA']['tl_calendar_events']['fields']['detailCE_' . $key] = [
         'label'                   => &$GLOBALS['TL_LANG']['tl_calendar_events']['detailCE' . $key],
         'exclude'                 => true,
         'inputType'               => 'textarea',
-        'eval'                    => array('rte' => 'tinyMCE', 'decodeEntities' => true, 'feEditable' => true),
-    );
+        'eval'                    => ['rte' => 'tinyMCE', 'decodeEntities' => true, 'feEditable' => true],
+    ];
 }
 
 /**
@@ -148,7 +148,7 @@ foreach (range(1, $GLOBALS['BS_EventSubmit']['DETAIL_CE_TEXT_FIELD']) as $key) {
 if (TL_MODE == 'FE') {
     $objFrontendUser = FrontendUser::getInstance();
 
-    $arrGuestFields = array('email', 'firstname', 'lastname', 'designation', 'company');
+    $arrGuestFields = ['email', 'firstname', 'lastname', 'designation', 'company'];
 
     if ($objFrontendUser->email === null) {
         foreach ($arrGuestFields as $key) {

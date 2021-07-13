@@ -18,6 +18,7 @@ use Haste\Util\Format;
 use Contao\MemberModel;
 use Contao\FrontendUser;
 use Contao\BackendTemplate;
+use Contao\CalendarEventsModel;
 use Contao\CoreBundle\Exception\ResponseException;
 
 /**
@@ -32,6 +33,7 @@ class ModuleEventSubmit extends Module
      */
     protected $strTemplate = 'mod_bs_submitevent';
     protected $strTable = 'tl_calendar_events';
+    private $objEvent;
 
     /**
      * Return a wildcard in the back end
@@ -51,7 +53,7 @@ class ModuleEventSubmit extends Module
             $objTemplate->href = 'contao/main.php?do=themes&amp;table=tl_module&amp;act=edit&amp;id=' . $this->id;
 
 
-            /* 
+            /*
                 If there is file upload in editable fields,
                 make sure upload destination is set
             */
@@ -102,18 +104,18 @@ class ModuleEventSubmit extends Module
         //This is set early, because its needed in function to create upload folder
         $this->Template->formId  =  $strFormId;
 
-        $objEvent = new \Contao\CalendarEventsModel();
+        $this->objEvent = new CalendarEventsModel();
 
         // Captcha, Check Captcha early, as creating upload folder depend on errors
         // but add to Widget/FFL at the end
         if (!$this->disableCaptcha) {
-            $arrCaptcha = array(
+            $arrCaptcha = [
                 'id' => 'evensubmit',
                 'label' => $GLOBALS['TL_LANG']['MSC']['securityQuestion'],
                 'type' => 'captcha',
                 'mandatory' => true,
                 'required' => true
-            );
+            ];
 
             /** @var FormCaptcha $strClass */
             $strClass = $GLOBALS['TL_FFL']['captcha'] ?? null;
@@ -151,7 +153,10 @@ class ModuleEventSubmit extends Module
             if (($arrData['inputType'] ?? null) == 'fileTree') {
                 $arrData['inputType'] = 'upload';
 
-                if ($arrData['eval']['storeFile']) {
+                //Create custom folder only when form is submitted and doNotSubmit flag is false
+                //to avoid increasing news id. It is better if the upload field is kept at the end of form,
+                //so that all other fields are validated before creating the folder.
+                if (!$doNotSubmit && Input::post('FORM_SUBMIT') == $strFormId && $arrData['eval']['storeFile']) {
 
                     //Set custom upload folder
                     $arrData['eval']['uploadFolder'] = $this->getUploadFolderUuid();
@@ -191,8 +196,8 @@ class ModuleEventSubmit extends Module
                 $hasUpload = true;
             }
 
-            // Validate the form data
-            if (Input::post('FORM_SUBMIT') == $strFormId) {
+            // Validate the form data, if doNotSubmit flag is not set
+            if (!$doNotSubmit && Input::post('FORM_SUBMIT') == $strFormId) {
                 $objWidget->validate();
 
                 $varValue = $objWidget->value;
@@ -200,7 +205,7 @@ class ModuleEventSubmit extends Module
                 $rgxp = $arrData['eval']['rgxp'];
 
                 // Convert date formats into timestamps (check the eval setting first -> #3063)
-                if ($varValue !== null && $varValue !== '' && \in_array($rgxp, array('date', 'time', 'datim'))) {
+                if ($varValue !== null && $varValue !== '' && \in_array($rgxp, ['date', 'time', 'datim'])) {
                     try {
                         $objDate = new Date($varValue, Date::getFormatFromRgxp($rgxp));
                         $oriValue = $varValue;
@@ -210,7 +215,7 @@ class ModuleEventSubmit extends Module
                         $timeLimit = strtotime(date('Y-m-d', strtotime('+' . $GLOBALS['BS_EventSubmit']['BS_EVENT_ALLOWED_MONTHS'] . ' month')));
 
                         if ($varValue > $timeLimit) {
-                            $objWidget->addError(sprintf($GLOBALS['TL_LANG']['ERR']['farawayDate'], $oriValue,  date('d-m-Y', $timeLimit)));
+                            $objWidget->addError(sprintf($GLOBALS['TL_LANG']['ERR']['farawayDate'], $oriValue, date('d-m-Y', $timeLimit)));
                         }
                     } catch (\OutOfBoundsException $e) {
                         $objWidget->addError(sprintf($GLOBALS['TL_LANG']['ERR']['invalidDate'], $varValue));
@@ -258,7 +263,7 @@ class ModuleEventSubmit extends Module
                     }
 
                     // Set the new value
-                    $objEvent->$field = $varValue;
+                    $this->objEvent->$field = $varValue;
                 }
             }
 
@@ -279,7 +284,7 @@ class ModuleEventSubmit extends Module
 
         //Add event creator member for logged in
         if (FE_USER_LOGGED_IN && $objUser->id) {
-            $objEvent->member = $objUser->id;
+            $this->objEvent->member = $objUser->id;
         }
 
         $this->Template->hasError = $doNotSubmit;
@@ -292,7 +297,7 @@ class ModuleEventSubmit extends Module
         if (Input::post('FORM_SUBMIT') == $strFormId && !$doNotSubmit) {
 
             //Create Event
-            $this->createNewEvent($objEvent);
+            $this->createNewEvent();
 
             // Check whether there is a jumpTo page
             if (($objJumpTo = $this->objModel->getRelated('jumpTo')) !== null) {
@@ -308,60 +313,59 @@ class ModuleEventSubmit extends Module
     /**
      * create a new Event
      */
-    public function createNewEvent($objEvent)
+    public function createNewEvent()
     {
-
-        $objEvent->tstamp  = time();
-        $objEvent->addTime = ($objEvent->startTime != 0 || $objEvent->startTime != '' ? '1' : '');
+        $this->objEvent->tstamp  = time();
+        $this->objEvent->addTime = ($this->objEvent->startTime != 0 || $this->objEvent->startTime != '' ? '1' : '');
         $arrAttachtment = []; //Add file path to notifcation later on
         $contentElement = [];
-        $slug_seed = $objEvent->title ?: 'tmpurl';
+        $slug_seed = $this->objEvent->title ?: 'tmpurl';
 
         //Calender
-        $objEvent->pid     = $this->bsEventSubmitCalendar;
-        $calender = $objEvent->getRelated('pid')->row();
-        $objEvent->author = $calender['eventOwner'];
+        $this->objEvent->pid     = $this->bsEventSubmitCalendar;
+        $calender = $this->objEvent->getRelated('pid')->row();
+        $this->objEvent->author = $calender['eventOwner'];
 
         // based "on system/modules/calendar/dca/tl_calendar_events.php"
-        $arrSet = array(
+        $arrSet = [
             'startDate' => 0,
             'endDate'   => 0,
             'startTime' => 0,
             'endTime'   => 0,
-        );
+        ];
 
-        $arrSet['addTime']   = $objEvent->addTime;
-        $arrSet['startDate'] = $objEvent->startDate;
-        $arrSet['startTime'] = $objEvent->startDate;
-        $arrSet['endTime']   = $objEvent->startDate;
-        $arrSet['endDate']   = $objEvent->startDate;
+        $arrSet['addTime']   = $this->objEvent->addTime;
+        $arrSet['startDate'] = $this->objEvent->startDate;
+        $arrSet['startTime'] = $this->objEvent->startDate;
+        $arrSet['endTime']   = $this->objEvent->startDate;
+        $arrSet['endDate']   = $this->objEvent->startDate;
 
         // Set end date
-        if (strlen($objEvent->endDate)) {
-            if ($objEvent->endDate > $objEvent->startDate) {
-                $arrSet['endDate'] = $objEvent->endDate;
-                $arrSet['endTime'] = $objEvent->endDate;
+        if (strlen($this->objEvent->endDate)) {
+            if ($this->objEvent->endDate > $this->objEvent->startDate) {
+                $arrSet['endDate'] = $this->objEvent->endDate;
+                $arrSet['endTime'] = $this->objEvent->endDate;
             }
         }
 
         // Add time
-        if ($objEvent->addTime) {
-            $arrSet['startTime'] = strtotime(date('Y-m-d', $arrSet['startTime']) . ' ' . date('H:i:s', $objEvent->startTime));
-            $arrSet['endTime']   = strtotime(date('Y-m-d', $arrSet['endTime'])   . ' ' . date('H:i:s', ($objEvent->endTime != 0 ? $objEvent->endTime : $objEvent->startTime)));
+        if ($this->objEvent->addTime) {
+            $arrSet['startTime'] = strtotime(date('Y-m-d', $arrSet['startTime']) . ' ' . date('H:i:s', $this->objEvent->startTime));
+            $arrSet['endTime']   = strtotime(date('Y-m-d', $arrSet['endTime'])   . ' ' . date('H:i:s', ($this->objEvent->endTime != 0 ? $this->objEvent->endTime : $this->objEvent->startTime)));
         }
 
         // Adjust end time of "all day" events
-        elseif (($objEvent->endDate != 0 && $arrSet['endDate'] == $arrSet['endTime']) || $arrSet['startTime'] == $arrSet['endTime']) {
+        elseif (($this->objEvent->endDate != 0 && $arrSet['endDate'] == $arrSet['endTime']) || $arrSet['startTime'] == $arrSet['endTime']) {
             $arrSet['endTime'] = (strtotime('+ 1 day', $arrSet['endTime']) - 1);
         }
 
-        if ($objEvent->endDate == '' || $objEvent->endDate == 0) {
+        if ($this->objEvent->endDate == '' || $this->objEvent->endDate == 0) {
             $arrSet['endDate'] = null;
         }
 
         // Update Event DateTime Data
         foreach ($arrSet as $key => $value) {
-            $objEvent->$key = $value;
+            $this->objEvent->$key = $value;
         }
 
 
@@ -370,50 +374,54 @@ class ModuleEventSubmit extends Module
         $aliasExists = function (string $alias): bool {
             return $this->Database->prepare("SELECT id FROM $this->strTable WHERE alias=?")->execute($alias)->numRows > 0;
         };
-        $objEvent->alias = System::getContainer()->get('contao.slug')->generate($slug_seed, $slugOptions, $aliasExists);
+        $this->objEvent->alias = System::getContainer()->get('contao.slug')->generate($slug_seed, $slugOptions, $aliasExists);
 
 
         //If there is an url value then set link target
-        if ($objEvent->url) {
-            //Add source type    
-            $objEvent->source = 'external';
+        if ($this->objEvent->url) {
+            //Add source type
+            $this->objEvent->source = 'external';
             //Add target_blank
-            $objEvent->target = 1;
+            $this->objEvent->target = 1;
         }
 
 
-        //If there were uploads then add the field to $objEvent
+        //If there were uploads then add the field to $this->objEvent
         //Also set the Template->enctype, before calling fn createNewEvent
-        if ($this->Template->getData()['enctype'] == 'multipart/form-data') {
+        if ($this->Template->getData()['enctype'] == 'multipart/form-data' && isset($_SESSION['FILES'])) {
             foreach (\array_keys($_SESSION['FILES']) as $fieldName) {
                 //enclosure; check also session file key is in the editable list
                 if (\in_array($fieldName, $this->editable) && $fieldName == 'enclosure') {
-                    $objEvent->addEnclosure = 1;
-                    $objEvent->{$fieldName} = $_SESSION['FILES'][$fieldName]['uuid'];
+                    $this->objEvent->addEnclosure = 1;
+                    $this->objEvent->{$fieldName} = $_SESSION['FILES'][$fieldName]['uuid'];
                     $arrAttachtment[$fieldName] = str_replace([TL_ROOT, ' '], ['{{env::url}}', '%20'], $_SESSION['FILES'][$fieldName]['tmp_name']);
                 }
 
                 //Teaser singleSRC
                 if (\in_array($fieldName, $this->editable) && $fieldName == 'singleSRC') {
-                    $objEvent->addImage = 1;
+                    $this->objEvent->addImage = 1;
                     $imgFileModel = FilesModel::findByUuid($_SESSION['FILES'][$fieldName]['uuid']);
-                    $objEvent->{$fieldName} = $imgFileModel->uuid;
+                    $this->objEvent->{$fieldName} = $imgFileModel->uuid;
                     $arrAttachtment['teaser_image'] = str_replace([TL_ROOT, ' '], ['{{env::url}}', '%20'], $_SESSION['FILES'][$fieldName]['tmp_name']);
                 }
             }
         }
 
         //Store if there is any detail text to create content element
-        $contentElement = array_filter($objEvent->row(), function ($key) {
+        $contentElement = array_filter($this->objEvent->row(), function ($key) {
             return strpos($key, 'detailCE') === 0;
         }, ARRAY_FILTER_USE_KEY);
 
-        $objNewEvent = $objEvent->save();
+        $objNewEvent = $this->objEvent->save();
 
 
         if ($objNewEvent !== null) {
             //Create content elements if any
             if (count($contentElement)) {
+
+                //make into numeric array
+                $contentElement = array_values($contentElement);
+
                 foreach ($contentElement as $index => $element) {
                     if (strlen(trim($element)) < 1) {
                         continue;
@@ -421,7 +429,7 @@ class ModuleEventSubmit extends Module
                     $ce_text['pid'] = $objNewEvent->id;
                     $ce_text['ptable'] = $this->strTable;
                     $ce_text['type'] = 'text';
-                    $ce_text['sorting'] = '100' . $index * 10;
+                    $ce_text['sorting'] = '1' . $index * 50;
                     $ce_text['tstamp'] = time();
                     $ce_text['text'] = $element;
                     Database::getInstance()->prepare("INSERT INTO tl_content %s")->set($ce_text)->execute();
@@ -524,9 +532,11 @@ class ModuleEventSubmit extends Module
     {
         $uuid = $this->bsUploadDir;
 
+        $this->objEvent->tstamp  = time();
+        $this->event = $this->objEvent->save();
+
         // Create new folder only when the form is sumbitted without error
         if ($GLOBALS['BS_EventSubmit']['BS_CUSTOM_FOLDER'] && Input::post('FORM_SUBMIT') == $this->Template->formId && !$this->Template->hasError) {
-
             if ($this->bsUploadDir) {
                 $basePath = FilesModel::findById($uuid)->row()['path'];
             } else {
@@ -540,7 +550,7 @@ class ModuleEventSubmit extends Module
             }
 
             //You can add any logic by defining callback function $GLOBALS['BS_EventSubmit']['BS_CUSTOM_FOLDER_FUNCTION']
-            $newFolder = date('Ymd-Hi') . '-' . $this->id;
+            $newFolder = date('Ymd-Hi') . '-' . $this->event->id;
 
             $objFolder = new Folder($basePath . '/' . $newFolder);
 

@@ -6,12 +6,12 @@ use Contao\Controller;
 
 // Fields
 
-$GLOBALS['TL_DCA']['tl_module']['fields']['bsEventSubmitEditable'] = array(
+$GLOBALS['TL_DCA']['tl_module']['fields']['bsEventSubmitEditable'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['bsEventSubmitEditable'],
     'exclude'                 => true,
     'inputType'               => 'checkboxWizard',
     'options_callback'        => static function () {
-        $return = array();
+        $return = [];
 
         System::loadLanguageFile('tl_calendar_events');
         Controller::loadDataContainer('tl_calendar_events');
@@ -28,26 +28,26 @@ $GLOBALS['TL_DCA']['tl_module']['fields']['bsEventSubmitEditable'] = array(
 
         return $return;
     },
-    'eval'                    => array('multiple' => true, 'submitOnChange' => true),
+    'eval'                    => ['multiple' => true, 'submitOnChange' => true],
     'sql'                     => "blob NULL"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_module']['fields']['bsEventSubmitCalendar'] = array(
+$GLOBALS['TL_DCA']['tl_module']['fields']['bsEventSubmitCalendar'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['bsEventSubmitCalendar'],
     'exclude'                 => true,
     'inputType'               => 'select',
     'foreignKey'              => 'tl_calendar.title',
-    'eval'                    => array('chosen' => true),
+    'eval'                    => ['chosen' => true],
     'sql'                     => "int(10) unsigned NOT NULL default '0'"
-);
+];
 
-$GLOBALS['TL_DCA']['tl_module']['fields']['bsUploadDir'] = array(
+$GLOBALS['TL_DCA']['tl_module']['fields']['bsUploadDir'] = [
     'label'                   => &$GLOBALS['TL_LANG']['tl_module']['bsUploadDir'],
     'exclude'                 => true,
     'inputType'               => 'fileTree',
-    'eval'                    => array('fieldType' => 'radio', 'mandatory' => true, 'tl_class' => 'clr'),
+    'eval'                    => ['fieldType' => 'radio', 'mandatory' => true, 'tl_class' => 'clr'],
     'sql'                     => "binary(16) NULL"
-);
+];
 
 
 /**
@@ -62,4 +62,4 @@ $GLOBALS['TL_DCA']['tl_module']['palettes']['bs_EventSubmit'] = '{title_legend},
 /**
  * Notification choices
  */
-$GLOBALS['TL_DCA']['tl_module']['fields']['nc_notification']['eval']['ncNotificationChoices']['bs_eventsubmit'] = array('bs_eventsubmit');
+$GLOBALS['TL_DCA']['tl_module']['fields']['nc_notification']['eval']['ncNotificationChoices']['bs_eventsubmit'] = ['bs_eventsubmit'];
